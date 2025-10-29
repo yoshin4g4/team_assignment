@@ -1,0 +1,355 @@
+/*
+--------------------------------------------------------
+    Proyek Praktikum 2 - Week 10
+    Toko Buku "Literasi Nusantara Jaya"
+    Kelompok: [isi nama anggota di sini]
+    Bahasa: C
+--------------------------------------------------------
+
+    Fitur Menu:
+    1. Input Data Buku Baru
+    2. View History Transaksi Penjualan
+    3. View Buku
+    4. Delete History
+    5. Delete Buku
+    6. Exit (Simpan data & keluar)
+    7. Input Transaksi Penjualan
+    8. Sort Buku (berdasarkan nama & harga)
+
+--------------------------------------------------------
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BUKU 100
+#define MAX_HISTORY 100
+
+// Struktur data untuk buku
+typedef struct {
+    char kode[10];
+    char nama[100];
+    char jenis[50];
+    float harga;
+} Buku;
+
+// Struktur data untuk history penjualan
+typedef struct {
+    char kodeBuku[10];
+    int jumlah;
+    float totalHarga;
+} History;
+
+// Variabel global untuk menyimpan data
+Buku daftarBuku[MAX_BUKU];
+History daftarHistory[MAX_HISTORY];
+int jumlahBuku = 0;
+int jumlahHistory = 0;
+
+// ---------------------------------------------------------
+// Fungsi untuk membaca data buku dari file databuku.txt
+// ---------------------------------------------------------
+void loadDataBuku() {
+    FILE *fp = fopen("databuku.txt", "r");
+    if (fp == NULL) {
+        jumlahBuku = 0; // File belum ada, inisialisasi kosong
+        return;
+    }
+    while (fscanf(fp, "%s %[^\n] %[^\n] %f\n",
+                  daftarBuku[jumlahBuku].kode,
+                  daftarBuku[jumlahBuku].nama,
+                  daftarBuku[jumlahBuku].jenis,
+                  &daftarBuku[jumlahBuku].harga) != EOF) {
+        jumlahBuku++;
+    }
+    fclose(fp);
+}
+
+// ---------------------------------------------------------
+// Fungsi untuk membaca data history dari file history.txt
+// ---------------------------------------------------------
+void loadDataHistory() {
+    FILE *fp = fopen("history.txt", "r");
+    if (fp == NULL) {
+        jumlahHistory = 0;
+        return;
+    }
+    while (fscanf(fp, "%s %d %f\n",
+                  daftarHistory[jumlahHistory].kodeBuku,
+                  &daftarHistory[jumlahHistory].jumlah,
+                  &daftarHistory[jumlahHistory].totalHarga) != EOF) {
+        jumlahHistory++;
+    }
+    fclose(fp);
+}
+
+// ---------------------------------------------------------
+// Fungsi untuk menyimpan data buku ke file
+// ---------------------------------------------------------
+void saveDataBuku() {
+    FILE *fp = fopen("databuku.txt", "w");
+    for (int i = 0; i < jumlahBuku; i++) {
+        fprintf(fp, "%s\n%s\n%s\n%.2f\n",
+                daftarBuku[i].kode,
+                daftarBuku[i].nama,
+                daftarBuku[i].jenis,
+                daftarBuku[i].harga);
+    }
+    fclose(fp);
+}
+
+// ---------------------------------------------------------
+// Fungsi untuk menyimpan data history ke file
+// ---------------------------------------------------------
+void saveDataHistory() {
+    FILE *fp = fopen("history.txt", "w");
+    for (int i = 0; i < jumlahHistory; i++) {
+        fprintf(fp, "%s %d %.2f\n",
+                daftarHistory[i].kodeBuku,
+                daftarHistory[i].jumlah,
+                daftarHistory[i].totalHarga);
+    }
+    fclose(fp);
+}
+
+// ---------------------------------------------------------
+// Menu 1: Input Data Buku Baru
+// ---------------------------------------------------------
+void inputDataBuku() {
+    Buku b;
+    printf("\n=== INPUT DATA BUKU BARU ===\n");
+    getchar();
+    printf("Nama Buku : ");
+    fgets(b.nama, 100, stdin);
+    b.nama[strcspn(b.nama, "\n")] = '\0';
+    printf("Jenis Buku: ");
+    fgets(b.jenis, 50, stdin);
+    b.jenis[strcspn(b.jenis, "\n")] = '\0';
+    printf("Harga Buku: ");
+    scanf("%f", &b.harga);
+
+    // Generate kode buku otomatis BK001, BK002, dst
+    sprintf(b.kode, "BK%03d", jumlahBuku + 1);
+
+    daftarBuku[jumlahBuku++] = b;
+    printf("✅ Buku berhasil ditambahkan! (Kode: %s)\n", b.kode);
+}
+
+// ---------------------------------------------------------
+// Menu 2: View History Transaksi Penjualan
+// ---------------------------------------------------------
+void viewHistory() {
+    printf("\n=== HISTORY TRANSAKSI ===\n");
+    if (jumlahHistory == 0) {
+        printf("Belum ada data transaksi.\n");
+        return;
+    }
+    for (int i = 0; i < jumlahHistory; i++) {
+        printf("%d. Kode Buku: %s | Jumlah: %d | Total Harga: Rp%.2f\n",
+               i + 1,
+               daftarHistory[i].kodeBuku,
+               daftarHistory[i].jumlah,
+               daftarHistory[i].totalHarga);
+    }
+}
+
+// ---------------------------------------------------------
+// Menu 3: View Buku
+// ---------------------------------------------------------
+void viewBuku() {
+    printf("\n=== DAFTAR BUKU ===\n");
+    if (jumlahBuku == 0) {
+        printf("Tidak ada data buku.\n");
+        return;
+    }
+    for (int i = 0; i < jumlahBuku; i++) {
+        printf("%d. [%s] %s | Jenis: %s | Harga: Rp%.2f\n",
+               i + 1,
+               daftarBuku[i].kode,
+               daftarBuku[i].nama,
+               daftarBuku[i].jenis,
+               daftarBuku[i].harga);
+    }
+}
+
+// ---------------------------------------------------------
+// Menu 4: Delete History
+// ---------------------------------------------------------
+void deleteHistory() {
+    viewHistory();
+    if (jumlahHistory == 0) return;
+    int idx;
+    printf("\nMasukkan index yang akan dihapus: ");
+    scanf("%d", &idx);
+    if (idx < 1 || idx > jumlahHistory) {
+        printf("❌ Index tidak valid!\n");
+        return;
+    }
+    for (int i = idx - 1; i < jumlahHistory - 1; i++) {
+        daftarHistory[i] = daftarHistory[i + 1];
+    }
+    jumlahHistory--;
+    printf("🗑️  Data Successfully delete..\n");
+}
+
+// ---------------------------------------------------------
+// Menu 5: Delete Buku
+// ---------------------------------------------------------
+void deleteBuku() {
+    viewBuku();
+    if (jumlahBuku == 0) return;
+    int idx;
+    printf("\nMasukkan index yang akan dihapus: ");
+    scanf("%d", &idx);
+    if (idx < 1 || idx > jumlahBuku) {
+        printf("❌ Index tidak valid!\n");
+        return;
+    }
+    for (int i = idx - 1; i < jumlahBuku - 1; i++) {
+        daftarBuku[i] = daftarBuku[i + 1];
+    }
+    jumlahBuku--;
+    printf("🗑️  Data Successfully delete..\n");
+}
+
+// ---------------------------------------------------------
+// Menu 7: Input Transaksi Penjualan
+// ---------------------------------------------------------
+void inputTransaksi() {
+    if (jumlahBuku == 0) {
+        printf("❌ Tidak ada data buku untuk transaksi.\n");
+        return;
+    }
+    char kode[10];
+    int jumlah;
+    printf("\n=== INPUT TRANSAKSI PENJUALAN ===\n");
+    viewBuku();
+    printf("\nMasukkan kode buku: ");
+    scanf("%s", kode);
+    printf("Masukkan jumlah terjual: ");
+    scanf("%d", &jumlah);
+
+    int found = -1;
+    for (int i = 0; i < jumlahBuku; i++) {
+        if (strcmp(daftarBuku[i].kode, kode) == 0) {
+            found = i;
+            break;
+        }
+    }
+    if (found == -1) {
+        printf("❌ Buku tidak ditemukan!\n");
+        return;
+    }
+
+    float total = daftarBuku[found].harga * jumlah;
+    strcpy(daftarHistory[jumlahHistory].kodeBuku, kode);
+    daftarHistory[jumlahHistory].jumlah = jumlah;
+    daftarHistory[jumlahHistory].totalHarga = total;
+    jumlahHistory++;
+
+    printf("💰 Transaksi berhasil dicatat! Total: Rp%.2f\n", total);
+}
+
+// ---------------------------------------------------------
+// Menu 8: Sort Buku (nama - bubble sort, harga - selection sort)
+// ---------------------------------------------------------
+void bubbleSortNama() {
+    for (int i = 0; i < jumlahBuku - 1; i++) {
+        for (int j = 0; j < jumlahBuku - i - 1; j++) {
+            if (strcmp(daftarBuku[j].nama, daftarBuku[j + 1].nama) > 0) {
+                Buku temp = daftarBuku[j];
+                daftarBuku[j] = daftarBuku[j + 1];
+                daftarBuku[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void selectionSortHargaDesc() {
+    for (int i = 0; i < jumlahBuku - 1; i++) {
+        int maxIdx = i;
+        for (int j = i + 1; j < jumlahBuku; j++) {
+            if (daftarBuku[j].harga > daftarBuku[maxIdx].harga) {
+                maxIdx = j;
+            }
+        }
+        Buku temp = daftarBuku[i];
+        daftarBuku[i] = daftarBuku[maxIdx];
+        daftarBuku[maxIdx] = temp;
+    }
+}
+
+void sortMenu() {
+    if (jumlahBuku == 0) {
+        printf("Tidak ada data buku untuk diurutkan.\n");
+        return;
+    }
+
+    int pilih;
+    printf("\n=== SORT BUKU ===\n");
+    printf("1. Berdasarkan Nama (Ascending - Bubble Sort)\n");
+    printf("2. Berdasarkan Harga (Descending - Selection Sort)\n");
+    printf("3. Kembali ke menu utama\n");
+    printf("Pilih: ");
+    scanf("%d", &pilih);
+
+    if (pilih == 1) {
+        bubbleSortNama();
+        printf("\n📚 Data Buku Setelah Diurutkan Berdasarkan Nama (A-Z):\n");
+        viewBuku();
+    } else if (pilih == 2) {
+        selectionSortHargaDesc();
+        printf("\n📚 Data Buku Setelah Diurutkan Berdasarkan Harga (Tinggi ke Rendah):\n");
+        viewBuku();
+    } else {
+        printf("Kembali ke menu utama...\n");
+    }
+}
+
+// ---------------------------------------------------------
+// Menu 6: Exit dan Simpan Data
+// ---------------------------------------------------------
+void exitProgram() {
+    saveDataBuku();
+    saveDataHistory();
+    printf("\n💾 Data disimpan ke file. Program selesai.\n");
+    exit(0);
+}
+
+// ---------------------------------------------------------
+// Fungsi Main
+// ---------------------------------------------------------
+int main() {
+    loadDataBuku();
+    loadDataHistory();
+
+    int menu;
+    do {
+        printf("\n=== MENU UTAMA ===\n");
+        printf("1. Input Data Buku Baru\n");
+        printf("2. View History Transaksi Penjualan\n");
+        printf("3. View Buku\n");
+        printf("4. Delete History\n");
+        printf("5. Delete Buku\n");
+        printf("6. Exit (Simpan & Keluar)\n");
+        printf("7. Input Transaksi Penjualan\n");
+        printf("8. Sort Buku (Nama/Harga)\n");
+        printf("Pilih menu: ");
+        scanf("%d", &menu);
+
+        switch (menu) {
+            case 1: inputDataBuku(); break;
+            case 2: viewHistory(); break;
+            case 3: viewBuku(); break;
+            case 4: deleteHistory(); break;
+            case 5: deleteBuku(); break;
+            case 6: exitProgram(); break;
+            case 7: inputTransaksi(); break;
+            case 8: sortMenu(); break;
+            default: printf("❌ Pilihan tidak valid!\n");
+        }
+    } while (1);
+
+    return 0;
+}
